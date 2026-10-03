@@ -1,0 +1,33 @@
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+
+# Downloadable Python environments and caches
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Downloadable JavaScript dependencies and generated builds
+node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+# Logs and editor temporary files
+*.log
+*.tmp
+*.swp
+
+# Local SOP uploads can be added again when needed
+data/*.doc
+data/*.docx
