@@ -1,14 +1,15 @@
 # Local credentials and environment overrides
-.env
-.env.*
-!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
 
-# Downloadable Python environments and caches
-venv/
-.venv/
-env/
-ENV/
-__pycache__/
+# Downloadable Python environments and caches (in backend)
+backend/venv/
+backend/.venv/
+backend/env/
+backend/ENV/
+backend/__pycache__/
+backend/**/__pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
@@ -19,7 +20,7 @@ __pycache__/
 htmlcov/
 
 # Downloadable JavaScript dependencies and generated builds
-node_modules/
+frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
 
@@ -28,6 +29,5 @@ frontend/dist-ssr/
 *.tmp
 *.swp
 
-# Local SOP uploads can be added again when needed
-data/*.doc
-data/*.docx
+# Ignore current test data docs 
+/data

@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     # API Keys & Cloud Configuration
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-20b"
     
     PINECONE_API_KEY: str = ""
     PINECONE_INDEX_NAME: str = "fmcg-sop-rag"
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     DATA_DIR: str = os.path.join(BASE_DIR, "data")
 
     class Config:
-        env_file = ".env"
+        env_file = "backend/.env"
         extra = "ignore"
 
     @property

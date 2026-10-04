@@ -131,11 +131,31 @@ body {
 
 .sidebar-content {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.sidebar-repository {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-repository > .section-label,
+.sidebar-quick-actions {
+  flex-shrink: 0;
+}
+
+.document-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .section-label {

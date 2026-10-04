@@ -393,37 +393,21 @@ export default function App() {
         </div>
 
         <div className="sidebar-content">
-          {/* Document Repository list */}
-          <div>
-            <div className="section-label">
-              <span>SOP Repository</span>
-              <span className="badge badge-success">{documents.length} Files</span>
-            </div>
+          {/* Quick Actions */}
+          <div className="sidebar-quick-actions">
+            <div className="section-label">Vector Store Actions</div>
+            <button
+              className="btn btn-primary"
+              style={{ width: '100%', justifyContent: 'center' }}
+              onClick={handleIndexAll}
+              disabled={indexingDoc}
+            >
+              <RefreshCw size={14} className={indexingDoc ? "spin" : ""} />
+              {indexingDoc ? "Vectorizing SOP Chunks..." : "Sync All Documents"}
+            </button>
+          </div>
 
-            {documents.map((doc, idx) => (
-              <div key={idx} className="doc-card" title={doc.filename}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, width: '100%' }}>
-                  <FileText size={16} color="#6366f1" style={{ flexShrink: 0 }} />
-                  <div className="doc-name" title={doc.filename}>{doc.filename}</div>
-                </div>
-                <div className="doc-meta">
-                  <span>{doc.size_kb} KB • {doc.chunks_count || 0} chunks</span>
-                  <span className="badge badge-success">
-                    <CheckCircle2 size={11} /> Vectorized
-                  </span>
-                </div>
-                <DocumentActions
-                  filename={doc.filename}
-                  compact
-                  loading={actionLoading[doc.filename]}
-                  onPreview={handlePreviewDocument}
-                  onExportTables={downloadDocumentTables}
-                  onDelete={handleDeleteDocument}
-                />
-              </div>
-            ))}
-
-            {/* Dropzone for Uploads */}
+                      {/* Dropzone for Uploads */}
             <div
               className="dropzone"
               onClick={() => fileInputRef.current?.click()}
@@ -453,20 +437,38 @@ export default function App() {
                 {uploadStatus}
               </div>
             )}
-          </div>
 
-          {/* Quick Actions */}
-          <div>
-            <div className="section-label">Vector Store Actions</div>
-            <button
-              className="btn btn-primary"
-              style={{ width: '100%', justifyContent: 'center' }}
-              onClick={handleIndexAll}
-              disabled={indexingDoc}
-            >
-              <RefreshCw size={14} className={indexingDoc ? "spin" : ""} />
-              {indexingDoc ? "Vectorizing SOP Chunks..." : "Sync All Documents"}
-            </button>
+          {/* Document Repository list */}
+          <div className="sidebar-repository">
+            <div className="section-label">
+              <span>SOP Repository</span>
+              <span className="badge badge-success">{documents.length} Files</span>
+            </div>
+
+            <div className="document-list">
+              {documents.map((doc) => (
+                <div key={doc.filename} className="doc-card" title={doc.filename}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, width: '100%' }}>
+                    <FileText size={16} color="#6366f1" style={{ flexShrink: 0 }} />
+                    <div className="doc-name" title={doc.filename}>{doc.filename}</div>
+                  </div>
+                  <div className="doc-meta">
+                    <span>{doc.size_kb} KB • {doc.chunks_count || 0} chunks</span>
+                    <span className="badge badge-success">
+                      <CheckCircle2 size={11} /> Vectorized
+                    </span>
+                  </div>
+                  <DocumentActions
+                    filename={doc.filename}
+                    compact
+                    loading={actionLoading[doc.filename]}
+                    onPreview={handlePreviewDocument}
+                    onExportTables={downloadDocumentTables}
+                    onDelete={handleDeleteDocument}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -488,7 +490,9 @@ export default function App() {
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <span className={`status-indicator ${systemStatus?.groq_configured ? '' : 'offline'}`}></span>
-              {systemStatus?.groq_configured ? 'Llama-3.3' : 'Set Key'}
+              {systemStatus?.groq_configured
+                ? systemStatus.groq_model?.split('/').pop()?.toUpperCase() || 'Configured'
+                : 'Set Key'}
             </span>
           </div>
         </div>
