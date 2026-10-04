@@ -1,5 +1,6 @@
 import time
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from pinecone import Pinecone, ServerlessSpec
 
 from backend.config import settings

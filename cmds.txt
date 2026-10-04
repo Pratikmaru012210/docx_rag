@@ -1,0 +1,21 @@
+Run the backend and frontend in two separate PowerShell terminals.
+
+BACKEND (Terminal 1)
+Change to the project root directory:
+Set-Location "C:\Z_Pratik\Technology\delete_asap\Word_POC"
+
+Activate the backend virtual environment and start the API:
+.\backend\venv\Scripts\Activate.ps1
+python -m uvicorn backend.main:app --reload --port 8000
+
+The backend should be available at http://localhost:8000
+API documentation: http://localhost:8000/docs
+
+FRONTEND (Terminal 2)
+Change to the frontend directory:
+Set-Location "C:\Z_Pratik\Technology\delete_asap\Word_POC\frontend"
+
+Start the Vite development server:
+npm run dev
+
+Open the frontend at http://localhost:5173

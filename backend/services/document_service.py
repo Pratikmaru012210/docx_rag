@@ -1,12 +1,13 @@
 import os
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from fastapi import UploadFile
 
 from backend.config import settings
-from backend.parser import HierarchicalDocxParser
-from backend.services.vector_store import VectorStoreService
 from backend.constants import ERROR_DOCX_ONLY, ERROR_FILE_NOT_FOUND, ERROR_NO_TABLES
 from backend.file_utils import resolve_document_path, save_document_atomically
+from backend.parser import HierarchicalDocxParser
+from backend.services.vector_store import VectorStoreService
 
 
 class DocumentService:
