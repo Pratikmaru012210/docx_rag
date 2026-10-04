@@ -81,65 +81,67 @@ export default function DocumentManagementView({
           <span className="badge badge-success">Incremental Pinecone Sync Active</span>
         </div>
 
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Document Name</th>
-              <th>Size</th>
-              <th>Chunks</th>
-              <th>Tables</th>
-              <th>Status</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {documents.length === 0 ? (
+        <div className="data-table-scroll">
+          <table className="data-table">
+            <thead>
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
-                  No documents found in `data/` folder. Click "Upload & Sync DOCX" to add your first SOP!
-                </td>
+                <th>Document Name</th>
+                <th>Size</th>
+                <th>Chunks</th>
+                <th>Tables</th>
+                <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
               </tr>
-            ) : documents.map((document) => (
-              <tr key={document.filename}>
-                <td style={{ fontWeight: 600, maxWidth: '300px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <FileText size={18} color="#6366f1" style={{ flexShrink: 0 }} />
-                    <span style={{ wordBreak: 'break-word' }}>{document.filename}</span>
-                  </div>
-                </td>
-                <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{document.size_kb} KB</td>
-                <td>
-                  <span className="badge badge-indigo">
-                    <Layers size={12} color="#818cf8" /> {document.chunks_count || 0} Chunks
-                  </span>
-                </td>
-                <td>
-                  <span className="badge badge-amber">
-                    <TableIcon size={12} color="#fbbf24" /> {document.tables_count || 0} {document.tables_count === 1 ? 'Table' : 'Tables'}
-                  </span>
-                </td>
-                <td>
-                  <span className="badge badge-success">
-                    <CheckCircle2 size={12} /> Synced in Pinecone
-                  </span>
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <DocumentActions
-                    filename={document.filename}
-                    loading={actionLoading[document.filename]}
-                    showSync
-                    showDownload
-                    onSync={onSync}
-                    onPreview={onPreview}
-                    onExportTables={onExportTables}
-                    onDownload={onDownload}
-                    onDelete={onDelete}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {documents.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                    No documents found in `data/` folder. Click "Upload & Sync DOCX" to add your first SOP!
+                  </td>
+                </tr>
+              ) : documents.map((document) => (
+                <tr key={document.filename}>
+                  <td style={{ fontWeight: 600, maxWidth: '300px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <FileText size={18} color="#6366f1" style={{ flexShrink: 0 }} />
+                      <span style={{ wordBreak: 'break-word' }}>{document.filename}</span>
+                    </div>
+                  </td>
+                  <td style={{ color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{document.size_kb} KB</td>
+                  <td>
+                    <span className="badge badge-indigo">
+                      <Layers size={12} color="#818cf8" /> {document.chunks_count || 0} Chunks
+                    </span>
+                  </td>
+                  <td>
+                    <span className="badge badge-amber">
+                      <TableIcon size={12} color="#fbbf24" /> {document.tables_count || 0} {document.tables_count === 1 ? 'Table' : 'Tables'}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="badge badge-success">
+                      <CheckCircle2 size={12} /> Synced in Pinecone
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <DocumentActions
+                      filename={document.filename}
+                      loading={actionLoading[document.filename]}
+                      showSync
+                      showDownload
+                      onSync={onSync}
+                      onPreview={onPreview}
+                      onExportTables={onExportTables}
+                      onDownload={onDownload}
+                      onDelete={onDelete}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
