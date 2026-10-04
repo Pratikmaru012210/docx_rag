@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from fastapi import UploadFile
 
 from backend.config import settings
@@ -71,25 +71,13 @@ class DocumentService:
         fpath = self.get_document_path(filename)
         doc_name = os.path.basename(fpath)
 
-        # 1. Purge existing vectors for this file only
-        self.vector_store.delete_document_vectors(doc_name)
-
-        # 2. Parse into enriched chunks
+        # Parse and embed before replacing existing vectors, so failed preparation preserves the current index.
         chunks = self.parser.create_chunks(fpath)
-        if not chunks:
-            return {
-                "status": "warning",
-                "document": doc_name,
-                "chunks_indexed": 0,
-                "table_chunks": 0,
-            }
-
-        # 3. Upsert new vectors
-        count = self.vector_store.upsert_chunks(doc_name, chunks)
+        count = self.vector_store.replace_document_chunks(doc_name, chunks)
         table_count = sum(1 for c in chunks if c["content_type"] == "table")
 
         return {
-            "status": "success",
+            "status": "success" if chunks else "warning",
             "document": doc_name,
             "chunks_indexed": count,
             "table_chunks": table_count,
@@ -110,8 +98,8 @@ class DocumentService:
     def delete_document(self, filename: str) -> Dict[str, Any]:
         """Deletes file locally and purges its vectors from Pinecone."""
         fpath = self.get_document_path(filename)
-        os.remove(fpath)
         vector_status = self.vector_store.delete_document_vectors(filename)
+        os.remove(fpath)
         return {
             "status": "success",
             "filename": filename,

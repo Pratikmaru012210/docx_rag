@@ -1,6 +1,7 @@
 import json
+import logging
 import os
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -9,10 +10,12 @@ from pydantic import BaseModel, Field
 from backend.config import settings
 from backend.file_utils import resolve_document_path
 from backend.rag_service import RAGService
-from backend.constants import ERROR_FILE_MISSING_FOR_INDEX, ERROR_INDEX
+from backend.services import vector_store_service
+from backend.constants import ERROR_FILE_MISSING_FOR_INDEX
 
 router = APIRouter(prefix="/api", tags=["RAG"])
-rag_service = RAGService()
+logger = logging.getLogger(__name__)
+rag_service = RAGService(vector_store=vector_store_service)
 
 
 class IndexRequest(BaseModel):
@@ -20,7 +23,7 @@ class IndexRequest(BaseModel):
 
 
 class ChatMessage(BaseModel):
-    role: str
+    role: Literal["user", "assistant"]
     content: str
 
 
@@ -45,7 +48,11 @@ def index_documents(request: IndexRequest):
         try:
             return {"results": [rag_service.index_document(str(path))]}
         except Exception as exc:
-            raise HTTPException(status_code=500, detail=ERROR_INDEX.format(error=exc)) from exc
+            logger.exception("Document indexing failed for %s", request.filename)
+            raise HTTPException(
+                status_code=500,
+                detail="Document indexing failed; check backend logs.",
+            ) from exc
 
     results = []
     for filename in os.listdir(settings.DATA_DIR):
@@ -53,8 +60,13 @@ def index_documents(request: IndexRequest):
             try:
                 path = resolve_document_path(settings.DATA_DIR, filename)
                 results.append(rag_service.index_document(str(path)))
-            except Exception as exc:
-                results.append({"document": filename, "status": "error", "error": str(exc)})
+            except Exception:
+                logger.exception("Document indexing failed for %s", filename)
+                results.append({
+                    "document": filename,
+                    "status": "error",
+                    "error": "Document indexing failed; check backend logs.",
+                })
     return {"results": results}
 
 
@@ -63,7 +75,8 @@ def search_debug(query: str = Query(..., description="User search query"), top_k
     try:
         return {"query": query, "chunks": rag_service.retrieve_context(query, top_k=top_k)}
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        logger.exception("Vector search failed")
+        raise HTTPException(status_code=500, detail="Vector search failed; check backend logs.") from exc
 
 
 @router.post("/chat")
@@ -74,8 +87,9 @@ def chat_stream(request: ChatRequest):
         try:
             for event in rag_service.stream_chat(request.query, chat_history=history, top_k=request.top_k):
                 yield f"data: {json.dumps(event)}\n\n"
-        except Exception as exc:
-            yield f"data: {json.dumps({'type': 'error', 'message': str(exc)})}\n\n"
+        except Exception:
+            logger.exception("Chat response generation failed")
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Response generation failed; check backend logs.'})}\n\n"
 
     return StreamingResponse(
         event_generator(),

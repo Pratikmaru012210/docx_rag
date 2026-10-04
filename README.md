@@ -8,7 +8,7 @@ A high-precision RAG (Retrieval-Augmented Generation) system built for **FMCG Su
 
 - **Backend**: FastAPI (Python 3.12)
 - **Vector DB**: Pinecone Serverless Vector Database (`multilingual-e5-large` / `llama-text-embed-v2` embeddings)
-- **LLM**: Groq Free AI API (`llama-3.3-70b-versatile` / `llama-3.1-8b-instant`)
+- **LLM**: Groq API (`openai/gpt-oss-20b` by default; configurable with `GROQ_MODEL`)
 - **Document Parser**: Sequential XML Traversal with `python-docx`
 - **Frontend**: React + Vite + Vanilla CSS (Glassmorphism & dark theme) + `react-markdown` with `remark-gfm`
 
@@ -17,7 +17,7 @@ A high-precision RAG (Retrieval-Augmented Generation) system built for **FMCG Su
 ## 🚀 Getting Started
 
 ### 1. Configure Environment Credentials
-Open the [.env](file:///c:/Z_Pratik/Technology/delete_asap/Word_POC/.env) file and add your keys:
+Open `backend/.env` and add your keys:
 
 ```env
 # 1. Groq API Key (Free from https://console.groq.com/keys)
@@ -42,7 +42,8 @@ CORS_ORIGINS=http://localhost:5173
 Open a terminal in the project root:
 
 ```powershell
-.\venv\Scripts\uvicorn backend.main:app --reload --port 8000
+.\backend\venv\Scripts\Activate.ps1
+python -m uvicorn backend.main:app --reload --port 8000
 ```
 
 ---
@@ -64,6 +65,7 @@ Visit **http://localhost:5173** in your browser.
 ```
 Word_POC/
 ├── backend/
+│   ├── venv/              # Local Python virtual environment (not committed)
 │   ├── main.py            # FastAPI app configuration and router registration
 │   ├── api/               # System, document, and RAG route modules
 │   ├── services/          # Document, vector-store, and LLM orchestration
@@ -73,15 +75,15 @@ Word_POC/
 │   ├── parser.py          # Hierarchical DOCX & Table Markdown Serializer
 │   ├── rag_service.py     # Pinecone vector indexing, search & Groq streaming
 │   └── requirements.txt   # Python dependencies
-├── data/                  # Local document storage (existing & uploaded SOPs)
-│   └── Standard Operating Procedure (SOP) - End-to-End FMCG Shampoo Supply Chain & Operations (Dove Model).docx
+├── data/                  # Local document storage (created automatically)
 ├── frontend/              # Vite React Chat Interface
 │   ├── src/
-│   │   ├── App.jsx        # Workflow state and chat orchestration
-│   │   ├── components/    # Reusable document controls, inventory, and reference modal
-│   │   └── constants.js   # Shared UI suggestions and confirmation text
+│   │   ├── App.jsx        # Application composition and layout
+│   │   ├── components/    # Reusable layout and feature UI
+│   │   ├── features/      # Chat, document, and reference workflows
+│   │   ├── shared/        # Shared frontend utilities
+│   │   ├── constants.js   # Shared UI suggestions and confirmation text
 │   │   └── index.css      # Modern Glassmorphism CSS Design System
 │   └── vite.config.js     # API reverse proxy to localhost:8000
-├── .env                   # Environment variables (API Keys)
-└── .env.example           # Reference configuration
+└── backend/.env           # Local environment variables (API keys; do not commit)
 ```

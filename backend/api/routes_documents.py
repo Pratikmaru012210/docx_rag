@@ -1,17 +1,14 @@
+import logging
+
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
-from typing import Optional
 
 from backend.services import document_service
 from backend.schemas import DocumentListResponse
 from backend.constants import DOCX_MIME_TYPE, ERROR_FILE_ALREADY_EXISTS
 
 router = APIRouter(prefix="/api", tags=["Documents"])
-
-
-class IndexAllRequest(BaseModel):
-    filename: Optional[str] = None
+logger = logging.getLogger(__name__)
 
 
 @router.get("/documents", response_model=DocumentListResponse)
@@ -25,7 +22,7 @@ def list_documents():
 async def upload_document(file: UploadFile = File(...), auto_sync: bool = True):
     """Uploads a DOCX file to data repository and optionally triggers single-doc sync."""
     try:
-        saved_path = document_service.save_uploaded_file(file)
+        document_service.save_uploaded_file(file)
         result = {
             "filename": file.filename,
             "message": "File successfully uploaded.",
@@ -40,8 +37,9 @@ async def upload_document(file: UploadFile = File(...), auto_sync: bool = True):
         raise HTTPException(status_code=400, detail=str(ve))
     except FileExistsError as exc:
         raise HTTPException(status_code=409, detail=ERROR_FILE_ALREADY_EXISTS) from exc
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.exception("Document upload failed")
+        raise HTTPException(status_code=500, detail="Document upload failed; check backend logs.") from exc
 
 
 @router.delete("/documents/{filename}")
@@ -53,8 +51,9 @@ def delete_document(filename: str):
         raise HTTPException(status_code=404, detail=str(fe))
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.exception("Document deletion failed")
+        raise HTTPException(status_code=500, detail="Document deletion failed; check backend logs.") from exc
 
 
 @router.post("/documents/{filename}/reindex")
@@ -71,8 +70,9 @@ def reindex_single_document(filename: str):
         raise HTTPException(status_code=404, detail=str(fe))
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.exception("Document re-index failed")
+        raise HTTPException(status_code=500, detail="Document re-index failed; check backend logs.") from exc
 
 
 @router.get("/documents/{filename}/preview")
@@ -84,8 +84,9 @@ def preview_document_structure(filename: str):
         raise HTTPException(status_code=404, detail=str(fe))
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.exception("Document preview failed")
+        raise HTTPException(status_code=500, detail="Document preview failed; check backend logs.") from exc
 
 
 @router.get("/documents/{filename}/download-docx")
@@ -109,5 +110,6 @@ def export_tables(filename: str = Query(..., description="Document filename in d
         raise HTTPException(status_code=404, detail=str(fe))
     except ValueError as ve:
         raise HTTPException(status_code=404, detail=str(ve))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.exception("Table export failed")
+        raise HTTPException(status_code=500, detail="Table export failed; check backend logs.") from exc

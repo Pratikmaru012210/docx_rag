@@ -158,6 +158,22 @@ body {
   overscroll-behavior: contain;
 }
 
+.sidebar-feedback {
+  flex-shrink: 0;
+  font-size: 0.74rem;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #cbd5e1;
+}
+
+.sidebar-feedback-error {
+  color: #fecdd3;
+  background: rgba(244, 63, 94, 0.1);
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
 .section-label {
   font-size: 0.75rem;
   font-weight: 700;
@@ -250,6 +266,8 @@ body {
   padding: 24px 16px;
   text-align: center;
   cursor: pointer;
+  font: inherit;
+  color: inherit;
   background: rgba(23, 32, 51, 0.4);
   transition: all 0.2s ease;
   display: flex;

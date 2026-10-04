@@ -1,4 +1,6 @@
 import os
+
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -16,6 +18,7 @@ class Settings(BaseSettings):
     PINECONE_INDEX_NAME: str = "fmcg-sop-rag"
     PINECONE_CLOUD: str = "aws"
     PINECONE_REGION: str = "us-east-1"
+    PINECONE_INDEX_READY_TIMEOUT_SECONDS: int = Field(default=120, ge=1)
     
     EMBEDDING_MODEL: str = "multilingual-e5-large"
     EMBEDDING_DIMENSION: int = 1024
@@ -29,7 +32,7 @@ class Settings(BaseSettings):
     DATA_DIR: str = os.path.join(BASE_DIR, "data")
 
     class Config:
-        env_file = "backend/.env"
+        env_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
         extra = "ignore"
 
     @property

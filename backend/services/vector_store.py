@@ -35,7 +35,13 @@ class VectorStoreService:
                     region=settings.PINECONE_REGION
                 )
             )
+            deadline = time.monotonic() + settings.PINECONE_INDEX_READY_TIMEOUT_SECONDS
             while not pc.describe_index(settings.PINECONE_INDEX_NAME).status['ready']:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"Pinecone index '{settings.PINECONE_INDEX_NAME}' did not become ready "
+                        f"within {settings.PINECONE_INDEX_READY_TIMEOUT_SECONDS} seconds."
+                    )
                 time.sleep(1)
 
         self._index = pc.Index(settings.PINECONE_INDEX_NAME)
@@ -58,21 +64,37 @@ class VectorStoreService:
 
     def delete_document_vectors(self, doc_name: str) -> Dict[str, Any]:
         """Purges vectors associated with a specific document from Pinecone via metadata filter."""
-        try:
-            index = self.get_index()
-            index.delete(filter={"doc_name": {"$eq": doc_name}})
-            return {"status": "success", "message": f"Purged vectors for {doc_name}"}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
+        index = self.get_index()
+        index.delete(filter={"doc_name": {"$eq": doc_name}})
+        return {"status": "success", "message": f"Purged vectors for {doc_name}"}
 
     def upsert_chunks(self, doc_name: str, chunks: List[Dict[str, Any]]) -> int:
-        """Embeds and upserts chunks into Pinecone in batches."""
+        """Embeds and upserts document chunks into Pinecone in batches."""
         if not chunks:
             return 0
 
-        index = self.get_index()
+        records = self._build_records(doc_name, chunks)
+        self._upsert_records(records)
+        return len(records)
+
+    def replace_document_chunks(self, doc_name: str, chunks: List[Dict[str, Any]]) -> int:
+        """Builds replacement vectors before purging existing vectors for the document."""
+        records = self._build_records(doc_name, chunks) if chunks else []
+        self.delete_document_vectors(doc_name)
+        if records:
+            self._upsert_records(records)
+        return len(records)
+
+    def _build_records(self, doc_name: str, chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         texts_to_embed = [c["text"] for c in chunks]
         embeddings = self.generate_embeddings(texts_to_embed, input_type="passage")
+        if len(embeddings) != len(chunks):
+            raise RuntimeError("Embedding service returned a different number of vectors than requested.")
+        if any(len(embedding) != settings.EMBEDDING_DIMENSION for embedding in embeddings):
+            raise ValueError(
+                f"Embedding dimension does not match the configured index dimension "
+                f"({settings.EMBEDDING_DIMENSION})."
+            )
 
         records = []
         for chunk, emb in zip(chunks, embeddings):
@@ -80,19 +102,20 @@ class VectorStoreService:
                 "id": chunk["chunk_id"],
                 "values": emb,
                 "metadata": {
-                    "doc_name": chunk["doc_name"],
+                    "doc_name": doc_name,
                     "breadcrumb": chunk["breadcrumb"],
                     "content_type": chunk["content_type"],
                     "text": chunk["text"],
                     "raw_content": chunk["raw_content"]
                 }
             })
+        return records
 
+    def _upsert_records(self, records: List[Dict[str, Any]]) -> None:
+        index = self.get_index()
         batch_size = 50
         for i in range(0, len(records), batch_size):
             index.upsert(vectors=records[i:i + batch_size])
-
-        return len(records)
 
     def similarity_search(self, query: str, top_k: int = 4) -> List[Dict[str, Any]]:
         """Performs cosine similarity search for a query string."""
