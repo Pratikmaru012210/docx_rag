@@ -22,6 +22,7 @@ app.add_middleware(
 
 @app.get("/", tags=["System"])
 def read_root():
+    """Return a small health response confirming that the API process is running."""
     return {"status": "online", "message": "FMCG SOP RAG Backend is running", "docs_url": "/docs"}
 
 

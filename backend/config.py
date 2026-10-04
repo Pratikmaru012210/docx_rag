@@ -37,6 +37,7 @@ class Settings(BaseSettings):
 
     @property
     def allowed_origins(self) -> list[str]:
+        """Parse the configured comma-separated browser origins into a clean list."""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
 

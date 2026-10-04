@@ -1,4 +1,5 @@
 export function downloadMarkdownFile(filename, content) {
+  // Trigger a browser download through a temporary object URL, then release its resources.
   const element = document.createElement('a');
   const file = new Blob([content], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(file);

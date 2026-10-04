@@ -14,6 +14,7 @@ class DocumentService:
     """Orchestrates document file management, parsing, vector store synchronization, and table exports."""
 
     def __init__(self, vector_store: VectorStoreService):
+        """Prepare the service with its vector store and DOCX parser dependencies."""
         self.vector_store = vector_store
         self.parser = HierarchicalDocxParser()
 
@@ -51,6 +52,7 @@ class DocumentService:
         return files
 
     def get_document_path(self, filename: str) -> str:
+        """Resolve a safe path under the data directory and require the file to exist."""
         try:
             fpath = resolve_document_path(settings.DATA_DIR, filename)
         except ValueError as exc:
@@ -86,6 +88,7 @@ class DocumentService:
 
     def sync_all_documents(self) -> List[Dict[str, Any]]:
         """Indexes all DOCX documents in the data directory."""
+        # Return per-file results so one failed document does not stop the batch sync.
         results = []
         for doc_info in self.list_documents():
             fname = doc_info["filename"]
@@ -99,6 +102,7 @@ class DocumentService:
     def delete_document(self, filename: str) -> Dict[str, Any]:
         """Deletes file locally and purges its vectors from Pinecone."""
         fpath = self.get_document_path(filename)
+        # Purge first; if the remote operation fails, keep the local source document intact.
         vector_status = self.vector_store.delete_document_vectors(filename)
         os.remove(fpath)
         return {

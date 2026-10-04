@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { streamChatMessage } from './chatService';
 
 export function useChat() {
+  // Own chat messages, streaming state, cancellation, and clipboard feedback.
   const [messages, setMessages] = useState([]);
   const [inputQuery, setInputQuery] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -10,6 +11,7 @@ export function useChat() {
   const chatAbortControllerRef = useRef(null);
 
   useEffect(() => () => {
+    // Prevent stale timers or an in-flight request from outliving this hook.
     window.clearTimeout(copiedTimeoutRef.current);
     chatAbortControllerRef.current?.abort();
   }, []);
@@ -19,6 +21,7 @@ export function useChat() {
     if (!trimmed || isStreaming) return;
 
     const history = messages.map(({ role, content }) => ({ role, content }));
+    // Account for the user message appended immediately before the assistant placeholder.
     const assistantIndex = messages.length + 1;
     const controller = new AbortController();
     chatAbortControllerRef.current = controller;
@@ -32,6 +35,7 @@ export function useChat() {
 
     let accumulatedText = '';
     const updateAssistant = (update) => {
+      // Patch only this response so concurrent state updates do not discard other messages.
       setMessages((previous) => previous.map((message, index) => (
         index === assistantIndex ? { ...message, ...update } : message
       )));
@@ -69,6 +73,7 @@ export function useChat() {
   }, [inputQuery, isStreaming, messages]);
 
   const handleKeyDown = useCallback((event) => {
+    // Enter submits; Shift+Enter keeps the browser's newline behavior.
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       handleSendMessage();
@@ -76,6 +81,7 @@ export function useChat() {
   }, [handleSendMessage]);
 
   const copyToClipboard = useCallback(async (text, identifier) => {
+    // Show temporary success feedback and surface clipboard permission failures to the user.
     try {
       await navigator.clipboard.writeText(text);
       setCopiedIndex(identifier);
@@ -87,6 +93,7 @@ export function useChat() {
     }
   }, []);
 
+  // Remove the current conversation without changing composer or provider state.
   const clearChat = useCallback(() => setMessages([]), []);
 
   return {

@@ -26,6 +26,7 @@ export default function ChatView({
   onOpenReferences,
   onDownload
 }) {
+  // Render the conversation, source controls, and message composer from parent state.
   return (
     <>
       <div className="messages-container">

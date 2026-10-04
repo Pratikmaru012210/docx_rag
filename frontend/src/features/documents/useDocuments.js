@@ -12,6 +12,7 @@ import {
 } from './documentService';
 
 export function useDocuments({ onOpenPreview }) {
+  // Centralize document loading, synchronization, upload, preview, and deletion state.
   const [documents, setDocuments] = useState([]);
   const [systemStatus, setSystemStatus] = useState(null);
   const [indexingDoc, setIndexingDoc] = useState(false);
@@ -21,6 +22,7 @@ export function useDocuments({ onOpenPreview }) {
   const [statusError, setStatusError] = useState(null);
 
   const fetchDocuments = useCallback(async () => {
+    // Refresh the inventory and expose fetch failures to the sidebar.
     try {
       setDocuments(await getDocuments());
       setDocumentsError(null);
@@ -31,6 +33,7 @@ export function useDocuments({ onOpenPreview }) {
   }, []);
 
   useEffect(() => {
+    // Load independent status and inventory requests together and ignore results after unmount.
     let active = true;
     Promise.allSettled([getSystemStatus(), getDocuments()]).then(([statusResult, documentsResult]) => {
       if (!active) return;
@@ -57,6 +60,7 @@ export function useDocuments({ onOpenPreview }) {
   }, []);
 
   const handleIndexAll = useCallback(async () => {
+    // Run a repository-wide sync and refresh the visible document list afterward.
     setIndexingDoc(true);
     setUploadStatus('Indexing document chunks into Pinecone...');
     try {
@@ -71,6 +75,7 @@ export function useDocuments({ onOpenPreview }) {
   }, [fetchDocuments]);
 
   const handleReindexSingle = useCallback(async (filename) => {
+    // Sync one document and report success or failure without changing other rows.
     setActionLoading((previous) => ({ ...previous, [filename]: 'syncing' }));
     try {
       const data = await reindexDocument(filename);
@@ -84,6 +89,7 @@ export function useDocuments({ onOpenPreview }) {
   }, [fetchDocuments]);
 
   const handleDeleteDocument = useCallback(async (filename) => {
+    // Confirm destructive removal, then delete the file and reload the inventory.
     if (!window.confirm(CONFIRM_DELETE_DOCUMENT(filename))) return;
 
     setActionLoading((previous) => ({ ...previous, [filename]: 'deleting' }));
@@ -99,6 +105,7 @@ export function useDocuments({ onOpenPreview }) {
   }, [fetchDocuments]);
 
   const handlePreviewDocument = useCallback(async (filename) => {
+    // Load parsed document chunks and pass them to the reference inspector.
     setActionLoading((previous) => ({ ...previous, [filename]: 'loading' }));
     try {
       const data = await previewDocument(filename);
@@ -111,6 +118,7 @@ export function useDocuments({ onOpenPreview }) {
   }, [onOpenPreview]);
 
   const handleFileUpload = useCallback(async (file) => {
+    // Upload and sync the selected file, then refresh the inventory on success.
     if (!file) return;
 
     setIndexingDoc(true);
@@ -127,6 +135,7 @@ export function useDocuments({ onOpenPreview }) {
   }, [fetchDocuments]);
 
   const handleExportTables = useCallback(async (filename) => {
+    // Fetch the Markdown table export and notify the user if the request fails.
     try {
       return await exportDocumentTables(filename);
     } catch (error) {

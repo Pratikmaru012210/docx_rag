@@ -17,6 +17,7 @@ class HierarchicalDocxParser:
     """
 
     def __init__(self, max_chunk_words: int = None, overlap_words: int = None):
+        """Set chunk sizing options, falling back to the application configuration."""
         self.max_chunk_words = max_chunk_words or settings.MAX_CHUNK_WORDS
         self.overlap_words = overlap_words or settings.CHUNK_OVERLAP_WORDS
 
@@ -105,6 +106,7 @@ class HierarchicalDocxParser:
         return elements
 
     def _format_breadcrumb(self, doc_title: str, heading_stack: Dict[int, str]) -> str:
+        """Combine the document title and active headings into a readable section path."""
         parts = []
         if doc_title:
             parts.append(doc_title)
@@ -126,6 +128,7 @@ class HierarchicalDocxParser:
         chunk_index = 0
 
         def flush_buffer():
+            """Emit the buffered paragraphs as one chunk and reset its word count."""
             nonlocal chunk_index, current_text_buffer, current_breadcrumb, current_word_count
             if not current_text_buffer:
                 return
@@ -151,12 +154,14 @@ class HierarchicalDocxParser:
             content = el["content"]
             breadcrumb = el["breadcrumb"]
 
+            # Split at substantial section changes so a chunk does not mix unrelated headings.
             if current_breadcrumb and breadcrumb != current_breadcrumb and current_word_count > (self.max_chunk_words // 2):
                 flush_buffer()
 
             current_breadcrumb = breadcrumb
 
             if el_type == "table":
+                # Keep tables intact as individual chunks rather than splitting their rows.
                 flush_buffer()
                 enriched_table_text = f"**Document Hierarchy:** {breadcrumb}\n**Table Context:**\n\n{content}"
                 chunks.append({
@@ -179,6 +184,7 @@ class HierarchicalDocxParser:
             else:
                 words = len(content.split())
                 if current_word_count + words > self.max_chunk_words:
+                    # Paragraphs remain whole; flush first when the next one would exceed the limit.
                     flush_buffer()
                 current_text_buffer.append(content)
                 current_word_count += words

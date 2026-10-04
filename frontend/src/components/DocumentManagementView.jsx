@@ -17,6 +17,7 @@ export default function DocumentManagementView({
   onDownload,
   onDelete
 }) {
+  // Summarize document metadata and render the scrollable inventory with per-file actions.
   const totalChunks = documents.reduce((total, document) => total + (document.chunks_count || 0), 0);
   const totalTables = documents.reduce((total, document) => total + (document.tables_count || 0), 0);
   const totalStorageKb = documents.reduce((total, document) => total + (document.size_kb || 0), 0);

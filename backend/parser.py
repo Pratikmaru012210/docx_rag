@@ -17,6 +17,7 @@ class HierarchicalDocxParser:
     """
 
     def __init__(self, max_chunk_words: int = 400, overlap_words: int = 50):
+        """Store the maximum chunk size and the configured overlap for parsing."""
         self.max_chunk_words = max_chunk_words
         self.overlap_words = overlap_words
 
@@ -146,6 +147,7 @@ class HierarchicalDocxParser:
         return elements
 
     def _format_breadcrumb(self, doc_title: str, heading_stack: Dict[int, str]) -> str:
+        """Build a unique, ordered path from the document title and active headings."""
         parts = []
         if doc_title:
             parts.append(doc_title)
@@ -172,6 +174,7 @@ class HierarchicalDocxParser:
         chunk_index = 0
 
         def flush_buffer():
+            """Emit the current paragraph buffer as a self-contained text chunk."""
             nonlocal chunk_index, current_text_buffer, current_breadcrumb, current_word_count
             if not current_text_buffer:
                 return

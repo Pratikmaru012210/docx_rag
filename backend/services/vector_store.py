@@ -11,10 +11,12 @@ class VectorStoreService:
     """Manages Pinecone Serverless vector storage, indexing, and similarity retrieval."""
 
     def __init__(self):
+        """Initialize empty client and index caches for lazy Pinecone setup."""
         self._pc: Optional[Pinecone] = None
         self._index = None
 
     def get_client(self) -> Pinecone:
+        """Lazily construct the Pinecone client using the configured API key."""
         if not self._pc:
             if not settings.PINECONE_API_KEY:
                 raise ValueError(ERROR_PINECONE_KEY_MISSING)
@@ -37,6 +39,7 @@ class VectorStoreService:
                 )
             )
             deadline = time.monotonic() + settings.PINECONE_INDEX_READY_TIMEOUT_SECONDS
+            # Poll against a monotonic deadline so system clock changes cannot affect the timeout.
             while not pc.describe_index(settings.PINECONE_INDEX_NAME).status['ready']:
                 if time.monotonic() >= deadline:
                     raise TimeoutError(
@@ -49,6 +52,7 @@ class VectorStoreService:
         return self._index
 
     def get_index(self):
+        """Return the cached index handle, creating or waiting for the index if needed."""
         if not self._index:
             self.ensure_index()
         return self._index
@@ -87,6 +91,7 @@ class VectorStoreService:
         return len(records)
 
     def _build_records(self, doc_name: str, chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Embed each chunk and build Pinecone records with retrieval metadata."""
         texts_to_embed = [c["text"] for c in chunks]
         embeddings = self.generate_embeddings(texts_to_embed, input_type="passage")
         if len(embeddings) != len(chunks):
@@ -113,6 +118,7 @@ class VectorStoreService:
         return records
 
     def _upsert_records(self, records: List[Dict[str, Any]]) -> None:
+        """Upsert records in bounded batches to keep each provider request manageable."""
         index = self.get_index()
         batch_size = 50
         for i in range(0, len(records), batch_size):

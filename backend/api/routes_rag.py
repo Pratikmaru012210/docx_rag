@@ -35,6 +35,7 @@ class ChatRequest(BaseModel):
 
 @router.post("/index")
 def index_documents(request: IndexRequest):
+    """Index one requested document or process every DOCX in the data directory."""
     if request.filename:
         try:
             path = resolve_document_path(settings.DATA_DIR, request.filename)
@@ -54,6 +55,7 @@ def index_documents(request: IndexRequest):
                 detail="Document indexing failed; check backend logs.",
             ) from exc
 
+    # Continue through the directory even if one file fails, reporting each outcome.
     results = []
     for filename in os.listdir(settings.DATA_DIR):
         if filename.lower().endswith(".docx"):
@@ -72,6 +74,7 @@ def index_documents(request: IndexRequest):
 
 @router.post("/search-debug")
 def search_debug(query: str = Query(..., description="User search query"), top_k: int = Query(4, ge=1, le=10)):
+    """Return retrieved chunks for debugging the vector search without generating a reply."""
     try:
         return {"query": query, "chunks": rag_service.retrieve_context(query, top_k=top_k)}
     except Exception as exc:
@@ -81,9 +84,11 @@ def search_debug(query: str = Query(..., description="User search query"), top_k
 
 @router.post("/chat")
 def chat_stream(request: ChatRequest):
+    """Stream the generated answer and citation events to the client using SSE."""
     history = [{"role": message.role, "content": message.content} for message in request.history]
 
     def event_generator():
+        """Convert each RAG event to an SSE data frame and report stream failures."""
         try:
             for event in rag_service.stream_chat(request.query, chat_history=history, top_k=request.top_k):
                 yield f"data: {json.dumps(event)}\n\n"

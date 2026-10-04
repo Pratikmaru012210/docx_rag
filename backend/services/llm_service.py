@@ -9,9 +9,11 @@ class LLMService:
     """Manages Groq LLM completions, prompt construction, and streaming generation."""
 
     def __init__(self):
+        """Initialize the lazy client cache for Groq requests."""
         self._groq: Optional[Groq] = None
 
     def get_client(self) -> Groq:
+        """Lazily initialize the Groq client after confirming the API key is configured."""
         if not self._groq:
             if not settings.GROQ_API_KEY:
                 raise ValueError(ERROR_GROQ_KEY_MISSING)
@@ -39,6 +41,7 @@ class LLMService:
         messages = [{"role": "system", "content": SYSTEM_INSTRUCTION_SOP}]
 
         if chat_history:
+            # Bound prompt growth by sending only the latest four conversation messages.
             for msg in chat_history[-4:]:
                 messages.append({"role": msg["role"], "content": msg["content"]})
 

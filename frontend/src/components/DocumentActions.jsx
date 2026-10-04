@@ -18,6 +18,7 @@ export default function DocumentActions({
   onDelete,
   onSync
 }) {
+  // Share the same document actions between the compact sidebar and inventory table.
   const buttonStyle = compact
     ? { fontSize: '0.7rem', padding: '4px 6px' }
     : { fontSize: '0.76rem', padding: '5px 9px' };

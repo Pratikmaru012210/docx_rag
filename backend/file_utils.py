@@ -27,14 +27,17 @@ def save_document_atomically(data_dir: str, filename: str, source: BinaryIO) -> 
     target_path = resolve_document_path(data_dir, filename)
     temporary_path = None
     try:
+        # Finish and flush the temporary copy before publishing it at the final path.
         with tempfile.NamedTemporaryFile(mode="wb", dir=data_dir, delete=False) as temporary:
             temporary_path = Path(temporary.name)
             shutil.copyfileobj(source, temporary)
             temporary.flush()
             os.fsync(temporary.fileno())
 
+        # A hard link publishes atomically and fails if the destination already exists.
         os.link(temporary_path, target_path)
         return target_path
     finally:
+        # The temporary name is no longer needed whether the save succeeded or failed.
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)

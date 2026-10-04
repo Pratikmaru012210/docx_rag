@@ -23,9 +23,11 @@ export default function AppSidebar({
   onExportTables,
   onDelete
 }) {
+  // Manage sidebar upload controls, repository actions, and provider readiness indicators.
   const fileInputRef = useRef(null);
 
   const handleFileChange = (event) => {
+    // Clear the input after upload so choosing the same file again still fires a change event.
     onUpload(event.target.files?.[0]);
     event.target.value = '';
   };

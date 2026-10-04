@@ -6,6 +6,7 @@ class TableSerializer:
 
     @staticmethod
     def to_markdown(table: Table) -> str:
+        """Serialize table rows as Markdown, treating the first row as the header."""
         rows = table.rows
         if not rows:
             return ""

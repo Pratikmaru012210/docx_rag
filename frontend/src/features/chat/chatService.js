@@ -1,4 +1,5 @@
 async function readRequestError(response) {
+  // Prefer the API's detail message, while retaining a useful status fallback for non-JSON errors.
   try {
     const payload = await response.json();
     return payload.detail || `HTTP Error: ${response.status}`;
@@ -8,6 +9,7 @@ async function readRequestError(response) {
 }
 
 function processEventLine(line, handlers) {
+  // Dispatch one complete SSE data frame to the matching chat event handler.
   if (!line.startsWith('data: ')) return;
 
   const event = JSON.parse(line.slice(6));
@@ -21,6 +23,7 @@ function processEventLine(line, handlers) {
 }
 
 export async function streamChatMessage({ query, history, handlers, signal }) {
+  // Post the prompt and incrementally decode SSE frames, buffering partial network chunks.
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -43,6 +46,7 @@ export async function streamChatMessage({ query, history, handlers, signal }) {
     const { value, done } = await reader.read();
     pending += decoder.decode(value, { stream: !done });
 
+    // Keep the final fragment until more bytes arrive because a network chunk may split a line.
     const lines = pending.split('\n');
     pending = lines.pop() || '';
     for (const line of lines) {

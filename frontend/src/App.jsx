@@ -10,6 +10,7 @@ import { useReferenceModal } from './features/references/useReferenceModal';
 import { downloadMarkdownFile } from './shared/utils/downloadMarkdownFile';
 
 export default function App() {
+  // Compose the chat, document-management, and reference-inspection workflows.
   const [activeTab, setActiveTab] = useState('chat');
   const messagesEndRef = useRef(null);
   const modal = useReferenceModal();
@@ -17,17 +18,20 @@ export default function App() {
   const documents = useDocuments({ onOpenPreview: modal.openModal });
 
   useEffect(() => {
+    // Keep newly streamed chat content in view without affecting document management.
     if (activeTab === 'chat') {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [activeTab, chat.messages, chat.isStreaming]);
 
   const handleExportTables = async (filename) => {
+    // Download the export only when the document service returned table content.
     const data = await documents.handleExportTables(filename);
     if (data) downloadMarkdownFile(data.filename, data.content);
   };
 
   const handleDownloadDocx = (filename) => {
+    // Open the original DOCX download route in a separate browser tab.
     window.open(`/api/documents/${encodeURIComponent(filename)}/download-docx`, '_blank');
   };
 

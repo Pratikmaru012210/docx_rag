@@ -10,9 +10,11 @@ export default function AppHeader({
   onClearChat,
   onUpload
 }) {
+  // Provide tab navigation and show actions relevant to the currently selected view.
   const fileInputRef = useRef(null);
 
   const handleFileChange = (event) => {
+    // Clear the input after upload so choosing the same file again still fires a change event.
     onUpload(event.target.files?.[0]);
     event.target.value = '';
   };

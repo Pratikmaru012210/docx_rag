@@ -9,6 +9,7 @@ from backend.services.vector_store import VectorStoreService
 
 class RAGService:
     def __init__(self, vector_store: Optional[VectorStoreService] = None):
+        """Set up document parsing, vector storage, and lazy Groq client configuration."""
         self.groq_api_key = settings.GROQ_API_KEY
         self.groq_model = settings.GROQ_MODEL
         self.vector_store = vector_store or VectorStoreService()
@@ -21,6 +22,7 @@ class RAGService:
         self._groq: Optional[Groq] = None
 
     def get_groq_client(self) -> Groq:
+        """Create the Groq client only when first needed, after validating its key."""
         if not self._groq:
             if not self.groq_api_key:
                 raise ValueError(ERROR_GROQ_KEY_MISSING)
@@ -62,7 +64,7 @@ class RAGService:
 
     def build_prompt(self, query: str, context_chunks: List[Dict[str, Any]], chat_history: List[Dict[str, str]] = None) -> List[Dict[str, str]]:
         """Builds system prompt and context augmented conversation for Groq."""
-        # Build context block
+        # Keep each retrieved chunk labeled so the model can distinguish its source and section.
         context_blocks = []
         for i, c in enumerate(context_chunks, 1):
             context_blocks.append(
@@ -79,7 +81,7 @@ class RAGService:
 
         messages = [{"role": "system", "content": SYSTEM_INSTRUCTION_SOP}]
 
-        # Include prior conversation history if present (last 4 turns)
+        # Limit history to the most recent four messages to bound prompt size.
         if chat_history:
             for msg in chat_history[-4:]:
                 messages.append({"role": msg["role"], "content": msg["content"]})

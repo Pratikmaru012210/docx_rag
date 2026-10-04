@@ -24,6 +24,7 @@ export default function ReferenceModal({
   onDownload,
   onDownloadAll
 }) {
+  // Render nothing until a source is selected; otherwise show its content and navigation.
   if (!sources || !currentSource) return null;
 
   const content = currentSource.raw_content || currentSource.text;
@@ -33,6 +34,7 @@ export default function ReferenceModal({
     <div
       className="modal-backdrop"
       onClick={(event) => {
+        // Close only when the backdrop itself is clicked, not when interacting with the dialog.
         if (event.target === event.currentTarget) onClose();
       }}
     >
