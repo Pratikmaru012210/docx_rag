@@ -15,7 +15,6 @@ async function readJsonResponse(response) {
 }
 
 export async function getDocuments() {
-  // Fetch and validate the document inventory returned by the backend.
   const payload = await readJsonResponse(await fetch('/api/documents'));
   if (!Array.isArray(payload.documents)) {
     throw new Error('The server returned an invalid document list.');
@@ -46,7 +45,6 @@ export async function reindexDocument(filename) {
 }
 
 export async function deleteDocument(filename) {
-  // Delete one document and its associated vector records.
   return readJsonResponse(await fetch(
     `/api/documents/${encodeURIComponent(filename)}`,
     { method: 'DELETE' }
@@ -61,7 +59,7 @@ export async function previewDocument(filename) {
 }
 
 export async function uploadDocument(file) {
-  // Upload a DOCX as multipart form data for backend storage and sync.
+  // Send the actual file to FastAPI, which stores it and indexes its chunks in ChromaDB.
   const formData = new FormData();
   formData.append('file', file);
   return readJsonResponse(await fetch('/api/upload', {

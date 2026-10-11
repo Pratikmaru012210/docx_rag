@@ -30,11 +30,11 @@ class RAGService:
         return self._groq
 
     def delete_document_vectors(self, doc_name: str) -> Dict[str, Any]:
-        """Deletes all vector chunks associated with a specific document from Pinecone."""
+        """Deletes all vector chunks associated with a specific document from ChromaDB."""
         return self.vector_store.delete_document_vectors(doc_name)
 
     def index_document(self, file_path: str, purge_existing: bool = True) -> Dict[str, Any]:
-        """Parses DOCX file hierarchically and indexes chunks into Pinecone (replaces old vectors of this doc)."""
+        """Parse a DOCX file hierarchically and replace its chunks in ChromaDB."""
         doc_name = os.path.basename(file_path)
         chunks = self.parser.create_chunks(file_path)
         if not purge_existing:
@@ -59,7 +59,7 @@ class RAGService:
         }
 
     def retrieve_context(self, query: str, top_k: int = 4) -> List[Dict[str, Any]]:
-        """Retrieves top-k context chunks from Pinecone vector DB."""
+        """Retrieve top-k context chunks from ChromaDB."""
         return self.vector_store.similarity_search(query, top_k=top_k)
 
     def build_prompt(self, query: str, context_chunks: List[Dict[str, Any]], chat_history: List[Dict[str, str]] = None) -> List[Dict[str, str]]:

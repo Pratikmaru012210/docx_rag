@@ -9,9 +9,15 @@ class ChatMessage(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    query: str = Field(..., min_length=1, description="User search or conversational query")
-    history: Optional[List[ChatMessage]] = Field(default=[], description="Prior conversation history")
-    top_k: Optional[int] = Field(default=4, ge=1, le=10, description="Number of vector chunks to retrieve")
+    query: str = Field(
+        ..., min_length=1, description="User search or conversational query"
+    )
+    history: Optional[List[ChatMessage]] = Field(
+        default=[], description="Prior conversation history"
+    )
+    top_k: Optional[int] = Field(
+        default=4, ge=1, le=10, description="Number of vector chunks to retrieve"
+    )
 
 
 class SourceCitation(BaseModel):
@@ -44,8 +50,8 @@ class IndexResponse(BaseModel):
 
 
 class SystemStatusResponse(BaseModel):
-    pinecone_configured: bool
+    gemini_configured: bool
     groq_configured: bool
-    index_name: str
+    collection_name: str
     groq_model: str
     embedding_model: str

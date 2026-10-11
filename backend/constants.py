@@ -15,7 +15,7 @@ DOCX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml
 ERROR_DOCX_ONLY = "Only .docx files are supported."
 ERROR_FILE_NOT_FOUND = "Specified file was not found in data repository."
 ERROR_NO_TABLES = "No tables found in this document to export."
-ERROR_PINECONE_KEY_MISSING = "PINECONE_API_KEY is not configured in .env."
+ERROR_GEMINI_KEY_MISSING = "GEMINI_AI_API is not configured in .env."
 ERROR_GROQ_KEY_MISSING = "GROQ_API_KEY is not configured in .env."
 
 ERROR_INVALID_FILENAME = "Invalid document filename."

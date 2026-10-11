@@ -36,7 +36,7 @@ export default function DocumentActions({
           style={buttonStyle}
           onClick={() => onSync(filename)}
           disabled={loading === 'syncing'}
-          title="Sync / Update only this document in Pinecone without re-embedding others"
+          title="Sync / Update only this document in ChromaDB without re-embedding others"
         >
           <RefreshCw size={12} className={loading === 'syncing' ? 'spin' : ''} />
           {loading === 'syncing' ? 'Syncing...' : 'Sync'}
@@ -75,7 +75,7 @@ export default function DocumentActions({
         style={buttonStyle}
         onClick={() => onDelete(filename)}
         disabled={loading === 'deleting'}
-        title="Delete file and purge its vectors from Pinecone"
+        title="Delete file and purge its vectors from ChromaDB"
       >
         <Trash2 size={compact ? 12 : 12} />
         {!compact && (loading === 'deleting' ? 'Purging...' : 'Delete')}

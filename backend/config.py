@@ -1,6 +1,5 @@
 import os
 
-from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
@@ -13,15 +12,12 @@ class Settings(BaseSettings):
     # API Keys & Cloud Configuration
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "openai/gpt-oss-20b"
-    
-    PINECONE_API_KEY: str = ""
-    PINECONE_INDEX_NAME: str = "fmcg-sop-rag"
-    PINECONE_CLOUD: str = "aws"
-    PINECONE_REGION: str = "us-east-1"
-    PINECONE_INDEX_READY_TIMEOUT_SECONDS: int = Field(default=120, ge=1)
-    
-    EMBEDDING_MODEL: str = "multilingual-e5-large"
-    EMBEDDING_DIMENSION: int = 1024
+
+    GEMINI_AI_API: str = ""
+    GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"
+    CHROMA_HOST: str = "localhost"
+    CHROMA_PORT: int = 8001
+    CHROMA_COLLECTION_NAME: str = "fmcg-sop-rag"
 
     # Parsing & Chunking Defaults
     MAX_CHUNK_WORDS: int = 350
@@ -38,7 +34,9 @@ class Settings(BaseSettings):
     @property
     def allowed_origins(self) -> list[str]:
         """Parse the configured comma-separated browser origins into a clean list."""
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        return [
+            origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()
+        ]
 
 
 settings = Settings()

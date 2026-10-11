@@ -7,7 +7,7 @@ A high-precision RAG (Retrieval-Augmented Generation) system built for **FMCG Su
 ## 🛠️ Tech Stack
 
 - **Backend**: FastAPI (Python 3.12)
-- **Vector DB**: Pinecone Serverless Vector Database (`multilingual-e5-large` / `llama-text-embed-v2` embeddings)
+- **Vector DB**: ChromaDB HTTP server with Gemini embeddings (`gemini-embedding-001`)
 - **LLM**: Groq API (`openai/gpt-oss-20b` by default; configurable with `GROQ_MODEL`)
 - **Document Parser**: Sequential XML Traversal with `python-docx`
 - **Frontend**: React + Vite + Vanilla CSS (Glassmorphism & dark theme) + `react-markdown` with `remark-gfm`
@@ -23,14 +23,14 @@ Open `backend/.env` and add your keys:
 # 1. Groq API Key (Free from https://console.groq.com/keys)
 GROQ_API_KEY=gsk_...
 
-# 2. Pinecone API Key (Free from https://app.pinecone.io/)
-PINECONE_API_KEY=pcsk_...
-PINECONE_INDEX_NAME=fmcg-sop-rag
-PINECONE_CLOUD=aws
-PINECONE_REGION=us-east-1
+# 2. Gemini API Key (https://aistudio.google.com/apikey)
+GEMINI_AI_API=...
 
-# Embedding model
-EMBEDDING_MODEL=multilingual-e5-large
+# ChromaDB server and collection
+CHROMA_HOST=localhost
+CHROMA_PORT=8001
+CHROMA_COLLECTION_NAME=fmcg-sop-rag
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
 
 # Comma-separated browser origins allowed to call the API
 CORS_ORIGINS=http://localhost:5173
@@ -38,7 +38,15 @@ CORS_ORIGINS=http://localhost:5173
 
 ---
 
-### 2. Start the FastAPI Backend
+### 2. Start ChromaDB
+From the `backend` directory, start the persistent ChromaDB HTTP server:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+chroma run --path .\chroma_db --port 8001
+```
+
+### 3. Start the FastAPI Backend
 Open a terminal in the project root:
 
 ```powershell
@@ -48,7 +56,7 @@ python -m uvicorn backend.main:app --reload --port 8000
 
 ---
 
-### 3. Start the React Frontend
+### 4. Start the React Frontend
 Open another terminal:
 
 ```powershell
@@ -73,7 +81,7 @@ Word_POC/
 │   ├── constants.py       # Shared prompts, MIME types, and response text
 │   ├── file_utils.py      # Safe paths and atomic document writes
 │   ├── parser.py          # Hierarchical DOCX & Table Markdown Serializer
-│   ├── rag_service.py     # Pinecone vector indexing, search & Groq streaming
+│   ├── rag_service.py     # ChromaDB vector indexing, search & Groq streaming
 │   └── requirements.txt   # Python dependencies
 ├── data/                  # Local document storage (created automatically)
 ├── frontend/              # Vite React Chat Interface

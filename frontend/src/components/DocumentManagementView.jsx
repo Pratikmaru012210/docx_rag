@@ -30,7 +30,7 @@ export default function DocumentManagementView({
             SOP Document Management Hub
           </h2>
           <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)' }}>
-            Manage, preview, update, and selectively sync SOP files in Pinecone vector database with zero wasted embeddings.
+            Manage, preview, update, and selectively sync SOP files in the ChromaDB vector database.
           </p>
         </div>
       </div>
@@ -79,7 +79,7 @@ export default function DocumentManagementView({
           <span style={{ fontSize: '0.92rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <FolderKanban size={16} color="#6366f1" /> Active SOP Document Inventory
           </span>
-          <span className="badge badge-success">Incremental Pinecone Sync Active</span>
+          <span className="badge badge-success">Incremental ChromaDB Sync Active</span>
         </div>
 
         <div className="data-table-scroll">
@@ -121,8 +121,10 @@ export default function DocumentManagementView({
                     </span>
                   </td>
                   <td>
-                    <span className="badge badge-success">
-                      <CheckCircle2 size={12} /> Synced in Pinecone
+                    <span className={`badge ${document.chunks_count > 0 ? 'badge-success' : 'badge-amber'}`}>
+                      {document.chunks_count > 0
+                        ? <><CheckCircle2 size={12} /> Synced in ChromaDB</>
+                        : 'No chunks extracted'}
                     </span>
                   </td>
                   <td style={{ textAlign: 'right' }}>

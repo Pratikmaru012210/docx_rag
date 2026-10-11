@@ -4,6 +4,7 @@ import AppSidebar from './components/layout/AppSidebar';
 import ChatView from './components/ChatView';
 import DocumentManagementView from './components/DocumentManagementView';
 import ReferenceModal from './components/ReferenceModal';
+import { getDocumentFromIndexedDB } from './services/indexedDbService';
 import { useChat } from './features/chat/useChat';
 import { useDocuments } from './features/documents/useDocuments';
 import { useReferenceModal } from './features/references/useReferenceModal';
@@ -30,8 +31,26 @@ export default function App() {
     if (data) downloadMarkdownFile(data.filename, data.content);
   };
 
-  const handleDownloadDocx = (filename) => {
-    // Open the original DOCX download route in a separate browser tab.
+  const handleDownloadDocx = async (filename) => {
+    // Download the stored DOCX directly from IndexedDB if available
+    try {
+      const doc = await getDocumentFromIndexedDB(filename);
+      if (doc && doc.fileData) {
+        const blob = new Blob([doc.fileData], { type: doc.mime_type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.filename || filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
+    } catch (err) {
+      console.warn('Could not read from IndexedDB for download, falling back to backend:', err);
+    }
+    // Fallback to backend route if file was from backend
     window.open(`/api/documents/${encodeURIComponent(filename)}/download-docx`, '_blank');
   };
 

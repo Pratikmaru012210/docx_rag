@@ -21,7 +21,7 @@ This project implements an **end-to-end, hierarchical, context-preserving RAG sy
 * **Sequential XML Parsing** preserving chronological reading order.
 * **Dynamic Breadcrumb Enrichment** prepending section paths (`Doc > H1 > H2 > H3`) to every chunk.
 * **Markdown Table Serialization** maintaining multi-column tabular semantics for LLMs.
-* **Pinecone Serverless Vector Database** with **Incremental Single-Document Sync (CRUD)**.
+* **ChromaDB HTTP Vector Database** with **Incremental Single-Document Sync (CRUD)** and Gemini embeddings.
 * **Ultra-Fast LLM Inference** via **Groq** using `llama-3.3-70b-versatile`.
 * **Glassmorphism React Frontend** with real-time SSE streaming, interactive **Reference Inspector Modal**, and one-click `.md` table export.
 
@@ -51,9 +51,9 @@ flowchart TD
         ChunkEnricher["Context-Enriched Chunker (Header Prepending)"]
     end
 
-    subgraph VectorStorage ["4. Vector Database (Pinecone Serverless)"]
-        EmbedModel["Pinecone Inference: multilingual-e5-large (1024 dims)"]
-        PineconeIndex["Pinecone Vector Index: fmcg-sop-rag\n(Metadata: doc_name, breadcrumb, type, text)"]
+    subgraph VectorStorage ["4. Vector Database (ChromaDB HTTP)"]
+        EmbedModel["Gemini Embeddings: gemini-embedding-001"]
+        ChromaCollection["ChromaDB Collection: fmcg-sop-rag\n(Documents + retrieval metadata)"]
     end
 
     subgraph LLMEngine ["5. LLM Inference (Groq Cloud API)"]
@@ -65,10 +65,10 @@ flowchart TD
     ChatTab -->|User Question| API_Chat
     Backend --> IngestionEngine
     IngestionEngine -->|Enriched Chunks| EmbedModel
-    EmbedModel -->|Vector Records + Metadata| PineconeIndex
+    EmbedModel -->|Vector Records + Metadata| ChromaCollection
     API_Chat -->|Embed Query| EmbedModel
-    EmbedModel -->|Query Vector| PineconeIndex
-    PineconeIndex -->|Top-K Retrieved Context + Breadcrumbs| Backend
+    EmbedModel -->|Query Vector| ChromaCollection
+    ChromaCollection -->|Top-K Retrieved Context + Breadcrumbs| Backend
     Backend -->|Augmented Prompt + System Instructions| GroqLlama
     GroqLlama -->|Token Stream + Sources| API_Chat
     API_Chat -->|SSE Events| ChatTab
@@ -94,16 +94,16 @@ flowchart TD
    **Table Context:**
    | Stage | Process / Phase | Lead Responsibility (R) | Accountable (A) | ... |
    ```
-6. **Vectorization**: Pinecone's serverless inference generates 1024-dimensional dense vectors using `multilingual-e5-large`.
-7. **Upsert with Metadata**: Vectors are upserted with metadata: `doc_name`, `breadcrumb`, `content_type` (`text` or `table`), `raw_content`, and `text`.
+6. **Vectorization**: The Gemini `gemini-embedding-001` API generates dense vectors.
+7. **Upsert with Metadata**: ChromaDB stores each chunk as a document, with `doc_name`, `breadcrumb`, `content_type` (`text` or `table`), and `raw_content` metadata.
 
 ---
 
 ### Phase B: Query Processing & Generation
 
 1. **Query Dispatch**: User submits a question from the React chat interface (e.g., *"What Hi-Pot dielectric test voltage is enforced?"*).
-2. **Query Vectorization**: FastAPI backend generates a query embedding using `multilingual-e5-large` with `input_type="query"`.
-3. **Similarity Search**: Pinecone executes cosine similarity search across the vector index and returns the **Top-K (4)** most relevant chunks.
+2. **Query Vectorization**: FastAPI generates a query embedding using Gemini `gemini-embedding-001`.
+3. **Similarity Search**: ChromaDB executes cosine similarity search across the collection and returns the **Top-K (4)** most relevant chunks.
 4. **Sources Sent Upfront**: The backend immediately yields a `sources` event over Server-Sent Events (SSE) containing chunk IDs, breadcrumbs, match scores, and raw Markdown tables.
 5. **Prompt Augmentation**: The system builds a structured prompt combining the system instructions, retrieved context blocks with source headers, prior conversation turns, and user query.
 6. **Streaming Generation**: Groq LLM (`llama-3.3-70b-versatile`) streams answer tokens in real-time.
@@ -116,8 +116,8 @@ flowchart TD
 | Component                        | Technology / Model                                     | Specifications & Configuration                                                                                   | Why Selected                                                                               |
 | :------------------------------- | :----------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------- |
 | **LLM (Answering Engine)** | **Groq `llama-3.3-70b-versatile`**             | • 70 Billion Parameters• Context Window: 128k tokens• Temperature: `0.2`• Max Output: 2048 tokens          | Ultra-low latency inference (300+ tokens/sec), free API tier, high tabular reasoning.      |
-| **Embedding Model**        | **Pinecone Inference `multilingual-e5-large`** | • Embedding Dimension:**1024**• Metric: **Cosine**• Max Input: 512 tokens with `truncate="END"` | Native serverless inference (no local PyTorch/GPU required), strong retrieval performance. |
-| **Vector Database**        | **Pinecone Serverless**                          | • Cloud:`aws`• Region: `us-east-1`• Metric: `cosine`• Dimension: `1024`                              | Zero-infrastructure scaling, serverless metadata filtering for granular document CRUD.     |
+| **Embedding Model**        | **Google Gemini `gemini-embedding-001`** | • Task: `SEMANTIC_SIMILARITY`• API-backed embeddings | Uses the Gemini embedding API without a local model runtime. |
+| **Vector Database**        | **ChromaDB HTTP** | • Host: `localhost`• Port: `8001`• Metric: `cosine`• Collection: `fmcg-sop-rag` | Persistent local vector storage with metadata filtering for document-level CRUD. |
 | **Backend Framework**      | **FastAPI + Uvicorn**                            | • Python 3.12• Server-Sent Events (SSE)• Asynchronous Non-blocking IO                                         | High throughput, lightweight streaming support, typed Pydantic validation schemas.         |
 | **Frontend Framework**     | **React + Vite**                                 | • Modern Vanilla CSS Design System• `react-markdown` + `remark-gfm`• `lucide-react` icons               | Lightning fast hot module reloading, rich glassmorphism UI, interactive modal drawers.     |
 
@@ -133,18 +133,18 @@ flowchart TD
 
 ### 2. RAG & Vector Engine (`backend/rag_service.py`)
 
-* **`ensure_index()`**: Verifies that the Pinecone index exists; automatically provisions a 1024-dimension serverless index in `us-east-1` if missing.
-* **`delete_document_vectors(doc_name)`**: Uses Pinecone metadata filter `{"doc_name": {"$eq": doc_name}}` to purge only the vectors belonging to a specific document.
-* **`index_document(file_path, purge_existing=True)`**: Performs an **incremental sync** by purging old vectors for that document first, embedding new chunks, and upserting in batches.
+* **`get_collection()`**: Connects to the ChromaDB HTTP server and creates the cosine-distance collection if missing.
+* **`delete_document_vectors(doc_name)`**: Uses ChromaDB metadata filtering to purge only the vectors belonging to a specific document.
+* **`index_document(file_path, purge_existing=True)`**: Performs an **incremental sync** by embedding new chunks before purging old vectors, then upserting in batches.
 * **`stream_chat(query, chat_history, top_k=4)`**: Orchestrates query embedding, similarity retrieval, and Groq streaming with upfront citation metadata delivery.
 
 ### 3. REST & Streaming API (`backend/api/`)
 
 `backend/main.py` owns app configuration, CORS policy, and router registration. Route handlers are split across system, document, and RAG modules; document persistence and indexing orchestration live in `backend/services/document_service.py`.
 
-* **`GET /api/status`**: Returns health check and configuration status for Pinecone and Groq.
+* **`GET /api/status`**: Returns configuration status for Gemini embeddings and Groq, plus the ChromaDB collection name.
 * **`GET /api/documents`**: Returns active documents in `data/` along with file size, chunk counts, and table counts.
-* **`DELETE /api/documents/{filename}`**: Removes local file from disk and purges its vectors from Pinecone.
+* **`DELETE /api/documents/{filename}`**: Removes local file from disk and purges its vectors from ChromaDB.
 * **`POST /api/documents/{filename}/reindex`**: Re-indexes only that single document without touching other vectors.
 * **`GET /api/documents/{filename}/preview`**: Returns all parsed chunks and tables for structure inspection.
 * **`GET /api/documents/{filename}/download-docx`**: Downloads the raw original `.docx` file.
@@ -173,10 +173,10 @@ Traditional RAG architectures rebuild the entire vector index on every upload, i
 Update 1 File -> Re-embed Doc 1 + Doc 2 + ... + Doc N -> ❌ High Latency & High Cost
 
 [ Our Incremental Architecture ]
-Update Doc 2 -> Pinecone.delete(filter={"doc_name": "Doc 2"}) -> Embed Doc 2 Only -> ✅ 90%+ Cost Reduction
+Update Doc 2 -> ChromaDB.delete(where={"doc_name": "Doc 2"}) -> Embed Doc 2 Only -> ✅ Reduced embedding calls
 ```
 
-Every vector chunk is tagged with its parent `doc_name`. When a file is updated or deleted, Pinecone's metadata filtering purges only that document's vector partition, leaving all other documents untouched.
+Every vector chunk is tagged with its parent `doc_name`. When a file is updated or deleted, ChromaDB metadata filtering purges only that document's vectors, leaving all other documents untouched.
 
 ---
 
@@ -198,7 +198,7 @@ Word_POC/
 ├── backend/
 │   ├── main.py                     # FastAPI REST & SSE Streaming Server
 │   ├── parser.py                   # Hierarchical DOCX & Markdown Table Serializer
-│   ├── rag_service.py              # Pinecone Vector DB + Groq Streaming Service
+│   ├── rag_service.py              # ChromaDB Vector DB + Groq Streaming Service
 │   └── requirements.txt            # Python Dependencies
 ├── data/                           # Local SOP Document Storage
 │   ├── Standard Operating Procedure (SOP) - End-to-End FMCG Shampoo...docx

@@ -117,11 +117,11 @@ export default function AppSidebar({
       <div className="sidebar-footer">
         <div className="status-pill">
           <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Database size={13} /> Pinecone DB
+            <Database size={13} /> ChromaDB
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span className={`status-indicator ${systemStatus?.pinecone_configured ? '' : 'offline'}`}></span>
-            {systemStatus?.pinecone_configured ? 'Ready' : 'Set Key'}
+            <span className={`status-indicator ${systemStatus?.gemini_configured ? '' : 'offline'}`}></span>
+            {systemStatus?.gemini_configured ? 'Ready' : 'Set Gemini Key'}
           </span>
         </div>
 

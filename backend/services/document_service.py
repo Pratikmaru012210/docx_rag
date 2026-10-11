@@ -11,7 +11,7 @@ from backend.services.vector_store import VectorStoreService
 
 
 class DocumentService:
-    """Orchestrates document file management, parsing, vector store synchronization, and table exports."""
+    """Orchestrates document management, vector synchronization, and table exports."""
 
     def __init__(self, vector_store: VectorStoreService):
         """Prepare the service with its vector store and DOCX parser dependencies."""
@@ -66,7 +66,9 @@ class DocumentService:
         if not file.filename or not file.filename.endswith(".docx"):
             raise ValueError(ERROR_DOCX_ONLY)
 
-        target_path = save_document_atomically(settings.DATA_DIR, file.filename, file.file)
+        target_path = save_document_atomically(
+            settings.DATA_DIR, file.filename, file.file
+        )
         return target_path
 
     def sync_document(self, filename: str) -> Dict[str, Any]:
@@ -100,7 +102,7 @@ class DocumentService:
         return results
 
     def delete_document(self, filename: str) -> Dict[str, Any]:
-        """Deletes file locally and purges its vectors from Pinecone."""
+        """Deletes file locally and purges its vectors from ChromaDB."""
         fpath = self.get_document_path(filename)
         # Purge first; if the remote operation fails, keep the local source document intact.
         vector_status = self.vector_store.delete_document_vectors(filename)
@@ -108,7 +110,7 @@ class DocumentService:
         return {
             "status": "success",
             "filename": filename,
-            "message": f"Successfully deleted {filename} and purged its vectors from Pinecone.",
+            "message": f"Successfully deleted {filename} and purged its vectors from ChromaDB.",
             "vector_status": vector_status,
         }
 

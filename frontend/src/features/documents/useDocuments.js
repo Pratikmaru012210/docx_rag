@@ -62,10 +62,20 @@ export function useDocuments({ onOpenPreview }) {
   const handleIndexAll = useCallback(async () => {
     // Run a repository-wide sync and refresh the visible document list afterward.
     setIndexingDoc(true);
-    setUploadStatus('Indexing document chunks into Pinecone...');
+    setUploadStatus('Indexing document chunks into ChromaDB...');
     try {
       const data = await indexAllDocuments();
-      setUploadStatus(`Indexing successful! Chunks vectorized: ${data.results?.[0]?.chunks_indexed || 'Completed'}`);
+      const results = data.results || [];
+      const chunksIndexed = results.reduce(
+        (total, result) => total + (result.chunks_indexed || 0),
+        0
+      );
+      const failures = results.filter((result) => result.status === 'error').length;
+      setUploadStatus(
+        failures
+          ? `Indexed ${chunksIndexed} chunks; ${failures} document(s) failed. Check backend logs and retry.`
+          : `Indexing complete: ${chunksIndexed} chunks across ${results.length} document(s).`
+      );
     } catch (error) {
       setUploadStatus(`Indexing failed: ${error.message}`);
     } finally {
@@ -79,7 +89,13 @@ export function useDocuments({ onOpenPreview }) {
     setActionLoading((previous) => ({ ...previous, [filename]: 'syncing' }));
     try {
       const data = await reindexDocument(filename);
-      window.alert(`Successfully synced ${filename} in Pinecone! Chunks indexed: ${data.details?.chunks_indexed || 'Done'}`);
+      if (data.details?.status === 'warning') {
+        window.alert(`Synced ${filename}, but no chunks were extracted. Check the DOCX content.`);
+      } else {
+        window.alert(
+          `Successfully synced ${filename} in ChromaDB! Chunks indexed: ${data.details?.chunks_indexed ?? 0}`
+        );
+      }
       await fetchDocuments();
     } catch (error) {
       window.alert(`Sync failed: ${error.message}`);
@@ -95,7 +111,7 @@ export function useDocuments({ onOpenPreview }) {
     setActionLoading((previous) => ({ ...previous, [filename]: 'deleting' }));
     try {
       await deleteDocument(filename);
-      window.alert(`Successfully deleted ${filename} and purged its vectors from Pinecone.`);
+      window.alert(`Successfully deleted ${filename} and its ChromaDB vectors.`);
       await fetchDocuments();
     } catch (error) {
       window.alert(`Delete failed: ${error.message}`);
@@ -118,14 +134,25 @@ export function useDocuments({ onOpenPreview }) {
   }, [onOpenPreview]);
 
   const handleFileUpload = useCallback(async (file) => {
-    // Upload and sync the selected file, then refresh the inventory on success.
+    // Upload the selected file to the backend, where it is stored and indexed.
     if (!file) return;
 
     setIndexingDoc(true);
-    setUploadStatus(`Uploading & syncing ${file.name}...`);
+    setUploadStatus(`Uploading and indexing ${file.name}...`);
     try {
-      await uploadDocument(file);
-      setUploadStatus(`Successfully uploaded & synced ${file.name}`);
+      const result = await uploadDocument(file);
+      const indexDetails = result.index_details;
+      if (result.indexed && indexDetails?.status === 'success') {
+        setUploadStatus(
+          `Uploaded and indexed ${file.name}: ${indexDetails.chunks_indexed} chunks in ChromaDB.`
+        );
+      } else if (indexDetails?.status === 'warning') {
+        setUploadStatus(
+          `Uploaded ${file.name}, but no chunks were extracted. Check the DOCX content, then use Sync to retry.`
+        );
+      } else {
+        setUploadStatus(`Uploaded ${file.name}. ${result.message || ''}`.trim());
+      }
       await fetchDocuments();
     } catch (error) {
       setUploadStatus(`Upload failed: ${error.message}`);
