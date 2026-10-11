@@ -98,6 +98,24 @@ You can verify the server from another terminal:
 Invoke-RestMethod http://127.0.0.1:8001/api/v2/heartbeat
 ```
 
+To stop ChromaDB, press **Ctrl+C** in the terminal where it is running. If port 8001 still responds after that, stop the ChromaDB process and its Python launcher processes from another PowerShell terminal:
+
+```powershell
+$connection = Get-NetTCPConnection -LocalPort 8001 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+$processId = if ($connection) { $connection.OwningProcess }
+while ($processId) {
+    $process = Get-CimInstance Win32_Process -Filter "ProcessId = $processId" -ErrorAction SilentlyContinue
+    if (-not $process -or ($process.Name -ne "chroma.exe" -and $process.Name -ne "python.exe") -or $process.CommandLine -notmatch "(?i)chroma") {
+        break
+    }
+    $parentProcessId = $process.ParentProcessId
+    Stop-Process -Id $process.ProcessId -Force
+    $processId = $parentProcessId
+}
+```
+
+This stops the server without deleting its persistent data in `backend\chroma_db`.
+
 ### 4. Start the FastAPI backend
 
 Open a **second new PowerShell terminal** at the repository root:
