@@ -3,6 +3,9 @@ backend/.env
 backend/.env.*
 !backend/.env.example
 
+# ChromaDB persistent local vector store
+**/chroma_db/
+
 # Downloadable Python environments and caches (in backend)
 backend/venv/
 backend/.venv/
