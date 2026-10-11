@@ -16,38 +16,91 @@ A high-precision RAG (Retrieval-Augmented Generation) system built for **FMCG Su
 
 ## 🚀 Getting Started
 
-### 1. Configure Environment Credentials
-Open `backend/.env` and add your keys:
+### Prerequisites
+
+- Windows with PowerShell
+- Python 3.12
+- Node.js LTS and npm
+- A Gemini API key for embeddings
+- A Groq API key for chat responses
+
+Run the following commands from the repository root (the folder containing `backend` and `frontend`).
+
+### 1. Create and install the Python environment
+
+Create a virtual environment once:
+
+```powershell
+py -3.12 -m venv backend\venv
+```
+
+Activate it and install backend dependencies:
+
+```powershell
+.\backend\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r backend\requirements.txt
+```
+
+If PowerShell blocks activation, allow scripts for this terminal session and try again:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\backend\venv\Scripts\Activate.ps1
+```
+
+### 2. Configure backend credentials
+
+Create your local environment file from the checked-in example:
+
+```powershell
+Copy-Item backend\.env.example backend\.env
+```
+
+Edit `backend/.env` and set your credentials:
 
 ```env
-# 1. Groq API Key (Free from https://console.groq.com/keys)
-GROQ_API_KEY=gsk_...
+# Chat model (get a key from https://console.groq.com/keys)
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=openai/gpt-oss-20b
 
-# 2. Gemini API Key (https://aistudio.google.com/apikey)
-GEMINI_AI_API=...
+# Embedding model (get a key from https://aistudio.google.com/apikey)
+GEMINI_AI_API=your_gemini_api_key
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
 
-# ChromaDB server and collection
+# Local ChromaDB server and collection
 CHROMA_HOST=localhost
 CHROMA_PORT=8001
 CHROMA_COLLECTION_NAME=fmcg-sop-rag
-GEMINI_EMBEDDING_MODEL=gemini-embedding-001
 
-# Comma-separated browser origins allowed to call the API
+# Frontend origin allowed by the API
 CORS_ORIGINS=http://localhost:5173
 ```
 
+Keep `backend/.env` private. It is excluded from Git; do not put real keys in source files or commit them.
+
 ---
 
-### 2. Start ChromaDB
-From the `backend` directory, start the persistent ChromaDB HTTP server:
+### 3. Start ChromaDB
+
+Open a **new PowerShell terminal** at the repository root. Activate the environment, then start ChromaDB:
 
 ```powershell
-.\venv\Scripts\Activate.ps1
-chroma run --path .\chroma_db --port 8001
+.\backend\venv\Scripts\Activate.ps1
+chroma run --path .\backend\chroma_db --port 8001
 ```
 
-### 3. Start the FastAPI Backend
-Open a terminal in the project root:
+Leave this terminal running. Chroma's persistent local data is stored in `backend\chroma_db`, is ignored by Git, and is created automatically when the server starts.
+
+You can verify the server from another terminal:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8001/api/v2/heartbeat
+```
+
+### 4. Start the FastAPI backend
+
+Open a **second new PowerShell terminal** at the repository root:
 
 ```powershell
 .\backend\venv\Scripts\Activate.ps1
@@ -56,15 +109,31 @@ python -m uvicorn backend.main:app --reload --port 8000
 
 ---
 
-### 4. Start the React Frontend
-Open another terminal:
+### 5. Install and start the React frontend
+
+Open a **third PowerShell terminal** at the repository root:
 
 ```powershell
-cd frontend
+Set-Location frontend
+npm install
 npm run dev
 ```
 
-Visit **http://localhost:5173** in your browser.
+Open **http://localhost:5173** in your browser. Keep the ChromaDB, FastAPI, and Vite terminals running while using the application.
+
+### 6. Upload and verify a document
+
+1. Upload a `.docx` file in the app. The frontend sends it to FastAPI, which stores the file under the project `data` directory and indexes its chunks in ChromaDB.
+2. Confirm the upload status reports a nonzero number of indexed chunks. The document list also displays its chunk count.
+3. Ask a question about the document. Matching chunks are retrieved from ChromaDB and the answer is streamed from Groq.
+
+If the app reports **0 chunks**, use **Sync** to retry and check that the file is a readable `.docx`. If an upload or chat fails, inspect the FastAPI terminal for the detailed error and confirm the ChromaDB terminal is still running.
+
+Local service URLs:
+
+- ChromaDB: **http://127.0.0.1:8001** (heartbeat: `/api/v2/heartbeat`)
+- FastAPI: **http://127.0.0.1:8000** (interactive API docs: `/docs`)
+- Frontend: **http://localhost:5173**
 
 ---
 
@@ -74,6 +143,9 @@ Visit **http://localhost:5173** in your browser.
 Word_POC/
 ├── backend/
 │   ├── venv/              # Local Python virtual environment (not committed)
+│   ├── chroma_db/         # Persistent ChromaDB data (not committed)
+│   ├── .env               # Local API keys and settings (not committed)
+│   ├── .env.example       # Environment variable template
 │   ├── main.py            # FastAPI app configuration and router registration
 │   ├── api/               # System, document, and RAG route modules
 │   ├── services/          # Document, vector-store, and LLM orchestration
@@ -83,7 +155,7 @@ Word_POC/
 │   ├── parser.py          # Hierarchical DOCX & Table Markdown Serializer
 │   ├── rag_service.py     # ChromaDB vector indexing, search & Groq streaming
 │   └── requirements.txt   # Python dependencies
-├── data/                  # Local document storage (created automatically)
+├── data/                  # Uploaded DOCX files (created automatically; not committed)
 ├── frontend/              # Vite React Chat Interface
 │   ├── src/
 │   │   ├── App.jsx        # Application composition and layout
@@ -93,5 +165,5 @@ Word_POC/
 │   │   ├── constants.js   # Shared UI suggestions and confirmation text
 │   │   └── index.css      # Modern Glassmorphism CSS Design System
 │   └── vite.config.js     # API reverse proxy to localhost:8000
-└── backend/.env           # Local environment variables (API keys; do not commit)
+└── README.md              # Setup and run instructions
 ```
